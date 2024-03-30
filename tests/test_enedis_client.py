@@ -11,12 +11,10 @@ import unittest
 from datetime import date, datetime
 from unittest.mock import Mock, patch
 from mock import MagicMock
-from homeassistant.core import HomeAssistant
 from requests import Session, Response
 from requests.cookies import cookiejar_from_dict
 
-from custom_components.ha_enedis_dataconnect.const import DEFAULT_REDIRECT_URI, LOGGER, ENDPOINT_TOKEN_URL
-from custom_components.ha_enedis_dataconnect.enedis_client import EnedisClient, TOKEN_TYPE_KEY, ACCESS_TOKEN_KEY, EnedisApiHelper
+from enedis_data_connect.enedis_client import DEFAULT_REDIRECT_URI, LOGGER, EnedisClient, TOKEN_TYPE_KEY, ACCESS_TOKEN_KEY, EnedisApiHelper
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, )
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -77,8 +75,7 @@ class EnedisClientTest(unittest.TestCase):
         self.stream_handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
         LOGGER.addHandler(self.stream_handler)
         _LOGGER.info('=> Starting test: %s', self)
-        self.hass_mock: HomeAssistant = Mock()
-        self.client: EnedisClient = EnedisClient(self.hass_mock, PDL, CLIENT_ID, CLIENT_SECRET)
+        self.client: EnedisClient = EnedisClient(PDL, CLIENT_ID, CLIENT_SECRET)
         self.session: Session = MagicMock(name='mocked session', return_value=object)
 
     def tearDown(self) -> None:
@@ -88,8 +85,6 @@ class EnedisClientTest(unittest.TestCase):
         if self.client:
             self.client.close()
             self.client = None
-        if self.hass_mock:
-            self.hass_mock = None
         if self.session:
             self.session = None
         LOGGER.removeHandler(self.stream_handler)
@@ -119,7 +114,7 @@ class EnedisClientTest(unittest.TestCase):
         self.assertFalse(self.client.is_connected())
         self.assertIsNone(self.client.get_token_data())
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_is_connected_when_connected(self, new_session_mock) -> None:
         """
         Test is_connected when connected
@@ -141,7 +136,7 @@ class EnedisClientTest(unittest.TestCase):
         self.assertTrue(self.client.get_request_count() > 0)
         self.assertTrue(self.client.get_errors_count() == 0)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_connect(self, new_session_mock) -> None:
         """
         Test the connect method
@@ -156,7 +151,7 @@ class EnedisClientTest(unittest.TestCase):
         self.assertTrue(self.client.get_request_count() > 0)
         self.assertTrue(self.client.get_errors_count() == 0)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_close_when_not_connected(self, new_session_mock) -> None:
         """
         Test the close method
@@ -171,7 +166,7 @@ class EnedisClientTest(unittest.TestCase):
         self.assertTrue(self.client.get_request_count() > 0)
         self.assertTrue(self.client.get_errors_count() == 0)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_close_when_connected(self, new_session_mock) -> None:
         """
         Test the close method
@@ -209,8 +204,7 @@ class EnedisApiHelperTest(unittest.TestCase):
         self.stream_handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
         LOGGER.addHandler(self.stream_handler)
         _LOGGER.info('=> Starting test: %s', self)
-        self.hass_mock: HomeAssistant = Mock()
-        self.client: EnedisClient = EnedisClient(self.hass_mock, PDL, CLIENT_ID, CLIENT_SECRET)
+        self.client: EnedisClient = EnedisClient(PDL, CLIENT_ID, CLIENT_SECRET)
         self.session: Session = MagicMock(name='mocked session', return_value=object)
         self.helper: EnedisApiHelper = EnedisApiHelper(self.client)
 
@@ -221,13 +215,11 @@ class EnedisApiHelperTest(unittest.TestCase):
         if self.client:
             self.client.close()
             self.client = None
-        if self.hass_mock:
-            self.hass_mock = None
         if self.session:
             self.session = None
         LOGGER.removeHandler(self.stream_handler)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_daily_consumption_with_invalid_token(self, new_session_mock) -> None:
         """
         Test the close method
@@ -248,7 +240,7 @@ class EnedisApiHelperTest(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertEqual(8, len(result))
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_daily_consumption_without_start_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -258,13 +250,14 @@ class EnedisApiHelperTest(unittest.TestCase):
             response_from_resource('daily_consumption.json')
         ])
         new_session_mock.return_value = self.session
+        # noinspection PyTypeChecker
         start_date: date = None
         end_date: date = date(2021, 9, 22)
 
         with self.assertRaises(ValueError):
             self.helper.get_daily_consumption(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_daily_consumption_without_end_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -275,12 +268,13 @@ class EnedisApiHelperTest(unittest.TestCase):
         ])
         new_session_mock.return_value = self.session
         start_date: date = date(2021, 9, 14)
+        # noinspection PyTypeChecker
         end_date: date = None
 
         with self.assertRaises(ValueError):
             self.helper.get_daily_consumption(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_daily_consumption_with_end_date_lower_than_start_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -296,7 +290,7 @@ class EnedisApiHelperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.helper.get_daily_consumption(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_daily_consumption(self, new_session_mock) -> None:
         """
         Test the close method
@@ -325,7 +319,7 @@ class EnedisApiHelperTest(unittest.TestCase):
             self.assertTrue(v >= 26429)
             self.assertTrue(v <= 49171)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_consumption_load_curve_without_start_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -335,13 +329,14 @@ class EnedisApiHelperTest(unittest.TestCase):
             response_from_resource('consumption_load_curve.json')
         ])
         new_session_mock.return_value = self.session
+        # noinspection PyTypeChecker
         start_date: date = None
         end_date: date = date(2021, 9, 22)
 
         with self.assertRaises(ValueError):
             self.helper.get_consumption_load_curve(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_consumption_load_curve_without_end_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -352,12 +347,13 @@ class EnedisApiHelperTest(unittest.TestCase):
         ])
         new_session_mock.return_value = self.session
         start_date: date = date(2021, 9, 14)
+        # noinspection PyTypeChecker
         end_date: date = None
 
         with self.assertRaises(ValueError):
             self.helper.get_consumption_load_curve(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_consumption_load_curve_with_end_date_lower_than_start_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -373,7 +369,7 @@ class EnedisApiHelperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.helper.get_consumption_load_curve(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_consumption_load_curve(self, new_session_mock) -> None:
         """
         Test the close method
@@ -402,7 +398,7 @@ class EnedisApiHelperTest(unittest.TestCase):
             self.assertTrue(v >= 261)
             self.assertTrue(v <= 3554)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_max_daily_consumed_power_without_start_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -412,13 +408,14 @@ class EnedisApiHelperTest(unittest.TestCase):
             response_from_resource('max_daily_consumed_power.json')
         ])
         new_session_mock.return_value = self.session
+        # noinspection PyTypeChecker
         start_date: date = None
         end_date: date = date(2021, 9, 22)
 
         with self.assertRaises(ValueError):
             self.helper.get_max_daily_consumed_power(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_max_daily_consumed_power_without_end_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -429,12 +426,13 @@ class EnedisApiHelperTest(unittest.TestCase):
         ])
         new_session_mock.return_value = self.session
         start_date: date = date(2021, 9, 14)
+        # noinspection PyTypeChecker
         end_date: date = None
 
         with self.assertRaises(ValueError):
             self.helper.get_max_daily_consumed_power(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_max_daily_consumed_power_with_end_date_lower_than_start_date(self, new_session_mock) -> None:
         """
         Test the close method
@@ -450,7 +448,7 @@ class EnedisApiHelperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.helper.get_max_daily_consumed_power(start_date, end_date)
 
-    @patch('custom_components.ha_enedis_dataconnect.enedis_client.EnedisClient._new_session')
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
     def test_get_max_daily_consumed_power(self, new_session_mock) -> None:
         """
         Test the close method
@@ -478,4 +476,3 @@ class EnedisApiHelperTest(unittest.TestCase):
             self.assertIsInstance(v, int)
             self.assertTrue(v >= 1287)
             self.assertTrue(v <= 7287)
-
