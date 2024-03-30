@@ -9,8 +9,8 @@ import os
 import sys
 import unittest
 from datetime import date, datetime
-from mock import MagicMock
 from unittest.mock import Mock, patch
+from mock import MagicMock
 from homeassistant.core import HomeAssistant
 from requests import Session, Response
 from requests.cookies import cookiejar_from_dict
@@ -34,7 +34,7 @@ def response_from_resource(filename: str) -> Response:
     :param filename: the name of the file to read
     :return: the Response object
     """
-    with open(RESOURCES_DIR + filename) as file:
+    with open(RESOURCES_DIR + filename, encoding='utf-8') as file:
         data = json.load(file)
         result: Response = Response()
         if 'status_code' in data:
