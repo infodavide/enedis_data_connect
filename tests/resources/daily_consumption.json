@@ -1,0 +1,51 @@
+{
+  "status_code": 200,
+  "content": {
+    "meter_reading": {
+      "usage_point_id": "22516914714270",
+      "start": "2021-09-14",
+      "end": "2021-09-22",
+      "quality": "BRUT",
+      "reading_type": {
+        "unit": "Wh",
+        "measurement_kind": "energy",
+        "aggregate": "sum",
+        "measuring_period": "P1D"
+      },
+      "interval_reading": [
+        {
+          "value": "49171",
+          "date": "2021-09-14"
+        },
+        {
+          "value": "44101",
+          "date": "2021-09-15"
+        },
+        {
+          "value": "38218",
+          "date": "2021-09-16"
+        },
+        {
+          "value": "39894",
+          "date": "2021-09-17"
+        },
+        {
+          "value": "34943",
+          "date": "2021-09-18"
+        },
+        {
+          "value": "26429",
+          "date": "2021-09-19"
+        },
+        {
+          "value": "38000",
+          "date": "2021-09-20"
+        },
+        {
+          "value": "34589",
+          "date": "2021-09-21"
+        }
+      ]
+    }
+  }
+}

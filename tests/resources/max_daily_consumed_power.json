@@ -1,0 +1,51 @@
+{
+  "status_code": 200,
+  "content": {
+    "meter_reading": {
+      "usage_point_id": "22516914714270",
+      "start": "2021-09-14",
+      "end": "2021-09-22",
+      "quality": "BRUT",
+      "reading_type": {
+        "unit": "VA",
+        "measurement_kind": "power",
+        "aggregate": "maximum",
+        "measuring_period": "P1D"
+      },
+      "interval_reading": [
+        {
+          "value": "4287",
+          "date": "2021-09-14 11:37:02"
+        },
+        {
+          "value": "1287",
+          "date": "2021-09-15 11:17:32"
+        },
+        {
+          "value": "7287",
+          "date": "2021-09-16 11:37:44"
+        },
+        {
+          "value": "5287",
+          "date": "2021-09-17 11:27:11"
+        },
+        {
+          "value": "5287",
+          "date": "2021-09-18 12:47:22"
+        },
+        {
+          "value": "1287",
+          "date": "2021-09-19 10:07:35"
+        },
+        {
+          "value": "2287",
+          "date": "2021-09-20 11:36:25"
+        },
+        {
+          "value": "3287",
+          "date": "2021-09-21 11:00:14"
+        }
+      ]
+    }
+  }
+}

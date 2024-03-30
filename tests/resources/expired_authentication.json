@@ -1,0 +1,10 @@
+{
+  "status_code": 401,
+  "content": {
+    "fault": {
+      "code": 900901,
+      "message": "Invalid Credentials",
+      "description": "Invalid JWT token. Signature verification failed.. Make sure you have provided the correct security credentials"
+    }
+  }
+}

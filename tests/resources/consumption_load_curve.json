@@ -1,0 +1,306 @@
+{
+  "status_code": 200,
+  "content": {
+    "meter_reading": {
+      "usage_point_id": "22516914714270",
+      "start": "2021-09-14",
+      "end": "2021-09-15",
+      "quality": "BRUT",
+      "reading_type": {
+        "unit": "W",
+        "measurement_kind": "power",
+        "aggregate": "average"
+      },
+      "interval_reading": [
+        {
+          "value": "2249",
+          "date": "2021-09-14 00:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1032",
+          "date": "2021-09-14 01:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "988",
+          "date": "2021-09-14 01:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "945",
+          "date": "2021-09-14 02:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1569",
+          "date": "2021-09-14 02:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "992",
+          "date": "2021-09-14 03:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "958",
+          "date": "2021-09-14 03:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "983",
+          "date": "2021-09-14 04:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1520",
+          "date": "2021-09-14 04:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "969",
+          "date": "2021-09-14 05:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1616",
+          "date": "2021-09-14 05:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2257",
+          "date": "2021-09-14 06:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2311",
+          "date": "2021-09-14 06:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2478",
+          "date": "2021-09-14 07:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2280",
+          "date": "2021-09-14 07:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2319",
+          "date": "2021-09-14 08:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2192",
+          "date": "2021-09-14 08:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2161",
+          "date": "2021-09-14 09:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2196",
+          "date": "2021-09-14 09:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2153",
+          "date": "2021-09-14 10:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2147",
+          "date": "2021-09-14 10:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "979",
+          "date": "2021-09-14 11:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1682",
+          "date": "2021-09-14 11:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "731",
+          "date": "2021-09-14 12:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "735",
+          "date": "2021-09-14 12:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1709",
+          "date": "2021-09-14 13:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1370",
+          "date": "2021-09-14 13:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1417",
+          "date": "2021-09-14 14:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2321",
+          "date": "2021-09-14 14:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "3029",
+          "date": "2021-09-14 15:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "3554",
+          "date": "2021-09-14 15:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2064",
+          "date": "2021-09-14 16:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1344",
+          "date": "2021-09-14 16:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1880",
+          "date": "2021-09-14 17:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "433",
+          "date": "2021-09-14 17:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "703",
+          "date": "2021-09-14 18:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "508",
+          "date": "2021-09-14 18:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "430",
+          "date": "2021-09-14 19:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "317",
+          "date": "2021-09-14 19:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "737",
+          "date": "2021-09-14 20:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1141",
+          "date": "2021-09-14 20:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1628",
+          "date": "2021-09-14 21:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "857",
+          "date": "2021-09-14 21:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "732",
+          "date": "2021-09-14 22:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "261",
+          "date": "2021-09-14 22:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "488",
+          "date": "2021-09-14 23:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "1698",
+          "date": "2021-09-14 23:30:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        },
+        {
+          "value": "2172",
+          "date": "2021-09-15 00:00:00",
+          "interval_length": "PT30M",
+          "measure_type": "B"
+        }
+      ]
+    }
+  }
+}
