@@ -10,17 +10,21 @@ import re
 from datetime import datetime, date
 from threading import RLock
 from typing import Any
-from homeassistant import exceptions
-from homeassistant.core import HomeAssistant
 from requests import PreparedRequest, Session, Request, Response
 
-from .const import ENDPOINT_TOKEN_URL, DEFAULT_REDIRECT_URI, ENDPOINT_URL, LOGGER
 from .utils import Singleton
 
-_LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 _DATE_FORMAT: str = '%Y-%m-%d'
 _DATE_TIME_FORMAT: str = '%Y-%m-%d %H:%M:%S'
 _RETRIES_COUNT: int = 3
+ENDPOINT_URL: str = 'https://ext.prod-sandbox.api.enedis.fr'
+_ENDPOINT_TOKEN_URL: str = ENDPOINT_URL + '/oauth2/v3/'
+EMPTY_STRING: str = ''
+DEFAULT_PDL: str = EMPTY_STRING
+DEFAULT_CLIENT_ID: str = EMPTY_STRING
+DEFAULT_CLIENT_SECRET: str = EMPTY_STRING
+DEFAULT_REDIRECT_URI: str = 'http://localhost'
 
 TOKEN_TYPE_KEY: str = 'token_type'
 ACCESS_TOKEN_KEY: str = 'access_token'
@@ -37,70 +41,58 @@ _END_PARAM: str = 'end'
 _USAGE_POINT_ID: str = 'usage_point_id'
 
 
-class InvalidClientId(exceptions.HomeAssistantError):
+class InvalidClientId(ValueError):
     """
     Error to indicate that PDL is invalid
     """
 
 
-class InvalidClientSecret(exceptions.HomeAssistantError):
+class InvalidClientSecret(ValueError):
     """
     Error to indicate that PDL is invalid
     """
 
 
-class InvalidPdl(exceptions.HomeAssistantError):
+class InvalidPdl(ValueError):
     """
     Error to indicate that PDL is invalid
     """
 
 
-class InvalidUrl(exceptions.HomeAssistantError):
+class InvalidUrl(ValueError):
     """
     Error to indicate that URL is invalid
     """
 
 
-class InvalidToken(exceptions.HomeAssistantError):
+class InvalidToken(ValueError):
     """
     Error to indicate that token is invalid
     """
 
 
-class InvalidScanInterval(exceptions.HomeAssistantError):
-    """
-    Error to indicate that scan interval is invalid
-    """
-
-
-class InvalidPeakHourCost(exceptions.HomeAssistantError):
-    """
-    Error to indicate that cost of a peak hour is invalid
-    """
-
-
-class InvalidAccess(exceptions.HomeAssistantError):
+class InvalidAccess(ValueError):
     """
     Error to indicate that token or PDL are not authorized
     """
 
 
-class ApiRequestError(exceptions.HomeAssistantError):
+class ApiRequestError(ValueError):
     """
     Error to indicate that request failed
     """
 
 
+# noinspection SpellCheckingInspection
 class EnedisClient(metaclass=Singleton):
     """
     The Enedis data-connect client
     """
 
     # noinspection PyTypeChecker
-    def __init__(self, hass: HomeAssistant, pdl: str, client_id: str, client_secret: str, redirect_uri: str = DEFAULT_REDIRECT_URI):
+    def __init__(self, pdl: str, client_id: str, client_secret: str, redirect_uri: str = DEFAULT_REDIRECT_URI):
         """
         The constructor
-        :param hass: the home assistant instance
         :param pdl: the PDL identifier
         :param client_id: the client identifier
         :param client_secret: the client secret
@@ -120,7 +112,6 @@ class EnedisClient(metaclass=Singleton):
             raise InvalidClientId
         if client_secret is None or len(client_secret) <= 0 or len(client_secret) > 128:
             raise InvalidClientSecret
-        self._hass: HomeAssistant = hass
         self._lock: RLock = RLock()
         self._pdl: str = pdl
         self._client_id: str = client_id
@@ -131,12 +122,6 @@ class EnedisClient(metaclass=Singleton):
         self._token_data: dict[str, Any] = None
         self._request_count: int = 0
         self._errors_count: int = 0
-
-    def __del__(self):
-        """
-        Destructor
-        """
-        self._hass.async_add_executor_job(self.close)
 
     def _log_request(self, req: PreparedRequest) -> None:
         """
@@ -362,12 +347,12 @@ class EnedisClient(metaclass=Singleton):
         }
         req_data: dict[str, str] = {
             'client_id': self._client_id,
-            'client_secret':  self._get_client_secret(),
+            'client_secret': self._get_client_secret(),
             'token': self._token_data['access_token']
         }
         # noinspection PyBroadException
         try:
-            self.post_data_without_result(ENDPOINT_TOKEN_URL + 'revoke', req_headers, req_params, req_data, auto_connect = False)
+            self.post_data_without_result(_ENDPOINT_TOKEN_URL + 'revoke', req_headers, req_params, req_data, auto_connect=False)
         except Exception:  # pylint: disable=broad-except
             self._logger.exception("An error occurred while closing the client")
         self._token_data = None
@@ -444,10 +429,11 @@ class EnedisClient(metaclass=Singleton):
             'client_id': self._client_id,
             'client_secret': self._get_client_secret()
         }
-        self._token_data = self.post_data_with_result(ENDPOINT_TOKEN_URL + 'token', req_headers, req_params, req_data, auto_connect = False)
+        self._token_data = self.post_data_with_result(_ENDPOINT_TOKEN_URL + 'token', req_headers, req_params, req_data, auto_connect=False)
         self._logger.debug("Token data is: %s", self._token_data)
 
 
+# noinspection SpellCheckingInspection
 class EnedisApiHelper:
     """
     The API helper
