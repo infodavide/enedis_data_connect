@@ -216,9 +216,12 @@ class EnedisClient(metaclass=Singleton):
                     resp = http_session.send(prepared_req)
                     self._log_response(resp)
                     if resp.status_code == 401:
-                        self._logger.warning("Token expired, trying to re-authenticate...")
-                        self._token_data = None
-                        self.connect()
+                        if auto_connect:
+                            self._logger.warning("Token expired, trying to re-authenticate...")
+                            self._token_data = None
+                            self.connect()
+                        else:
+                            raise InvalidAccess
                     elif resp.status_code == 200:
                         return json.loads(resp.text)
                     else:
@@ -265,9 +268,12 @@ class EnedisClient(metaclass=Singleton):
                     resp = http_session.send(prepared_req)
                     self._log_response(resp)
                     if resp.status_code == 401:
-                        self._logger.warning("Token expired, trying to re-authenticate...")
-                        self._token_data = None
-                        self.connect()
+                        if auto_connect:
+                            self._logger.warning("Token expired, trying to re-authenticate...")
+                            self._token_data = None
+                            self.connect()
+                        else:
+                            raise InvalidAccess
                     elif resp.status_code == 200:
                         return json.loads(resp.text)
                     else:
@@ -313,9 +319,12 @@ class EnedisClient(metaclass=Singleton):
                     resp = http_session.send(prepared_req)
                     self._log_response(resp)
                     if resp.status_code == 401:
-                        self._logger.warning("Token expired, trying to re-authenticate...")
-                        self._token_data = None
-                        self.connect()
+                        if auto_connect:
+                            self._logger.warning("Token expired, trying to re-authenticate...")
+                            self._token_data = None
+                            self.connect()
+                        else:
+                            raise InvalidAccess
                     elif resp.status_code == 200:
                         return
                     else:

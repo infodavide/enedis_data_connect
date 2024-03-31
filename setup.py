@@ -15,7 +15,7 @@ setup(
     version='1.0.0',
     description='Enedis data connect client',
     long_description=readme_content,
-    author='David Rolland',
+    author='David R', 
     author_email='contact@infodavid.org',
     url='https://github.com/infodavide/enedis_data_connect',
     license=license_content,
