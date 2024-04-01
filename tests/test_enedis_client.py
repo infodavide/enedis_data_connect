@@ -20,7 +20,8 @@ logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, )
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
 RESOURCES_DIR = os.path.dirname(__file__) + '/resources/'
-PDL: str = '22516914714270'
+CONSUMPTION_PRM: str = '22516914714270'
+PRODUCTION_PRM: str = '10284856584123'
 CLIENT_ID: str = 'client-1'
 CLIENT_SECRET: str = 'client-1-secret-1'
 REDIRECT_URL: str = DEFAULT_REDIRECT_URI
@@ -59,6 +60,7 @@ def response_from_resource(filename: str) -> Response:
         return result
 
 
+# noinspection SpellCheckingInspection
 class EnedisClientTest(unittest.TestCase):
     """
     The test suite for EnedisClient class
@@ -75,7 +77,7 @@ class EnedisClientTest(unittest.TestCase):
         self.stream_handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
         LOGGER.addHandler(self.stream_handler)
         _LOGGER.info('=> Starting test: %s', self)
-        self.client: EnedisClient = EnedisClient(PDL, CLIENT_ID, CLIENT_SECRET)
+        self.client: EnedisClient = EnedisClient(CONSUMPTION_PRM, PRODUCTION_PRM, CLIENT_ID, CLIENT_SECRET)
         self.session: Session = MagicMock(name='mocked session', return_value=object)
 
     def tearDown(self) -> None:
@@ -95,11 +97,17 @@ class EnedisClientTest(unittest.TestCase):
         """
         self.assertIsNotNone(self.client.get_client_id())
 
-    def test_get_pdl(self) -> None:
+    def test_get_consumption_prm(self) -> None:
         """
-        Test get_pdl method
+        Test get_consumption_prm method
         """
-        self.assertIsNotNone(self.client.get_pdl())
+        self.assertIsNotNone(self.client.get_consumption_prm())
+
+    def test_get_production_prm(self) -> None:
+        """
+        Test get_production_prm method
+        """
+        self.assertIsNotNone(self.client.get_production_prm())
 
     def test_is_connected_when_not_connected(self) -> None:
         """
@@ -188,6 +196,7 @@ class EnedisClientTest(unittest.TestCase):
         self.assertTrue(self.client.get_errors_count() == 0)
 
 
+# noinspection SpellCheckingInspection
 class EnedisApiHelperTest(unittest.TestCase):
     """
     The test suite for EnedisApiHelper class
@@ -204,7 +213,7 @@ class EnedisApiHelperTest(unittest.TestCase):
         self.stream_handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
         LOGGER.addHandler(self.stream_handler)
         _LOGGER.info('=> Starting test: %s', self)
-        self.client: EnedisClient = EnedisClient(PDL, CLIENT_ID, CLIENT_SECRET)
+        self.client: EnedisClient = EnedisClient(CONSUMPTION_PRM, PRODUCTION_PRM, CLIENT_ID, CLIENT_SECRET)
         self.session: Session = MagicMock(name='mocked session', return_value=object)
         self.helper: EnedisApiHelper = EnedisApiHelper(self.client)
 
@@ -476,3 +485,182 @@ class EnedisApiHelperTest(unittest.TestCase):
             self.assertIsInstance(v, int)
             self.assertTrue(v >= 1287)
             self.assertTrue(v <= 7287)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_daily_production_with_invalid_token(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('expired_authentication.json'),
+            response_from_resource('authentication.json'),
+            response_from_resource('daily_production.json')
+        ])
+        new_session_mock.return_value = self.session
+        start_date: date = date(2021, 9, 14)
+        end_date: date = date(2021, 9, 22)
+
+        self.client.connect()
+        result: dict[date, int] = self.helper.get_daily_production(start_date, end_date)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(8, len(result))
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_daily_production_without_start_date(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('daily_production.json')
+        ])
+        new_session_mock.return_value = self.session
+        # noinspection PyTypeChecker
+        start_date: date = None
+        end_date: date = date(2021, 9, 22)
+
+        with self.assertRaises(ValueError):
+            self.helper.get_daily_production(start_date, end_date)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_daily_production_without_end_date(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('daily_production.json')
+        ])
+        new_session_mock.return_value = self.session
+        start_date: date = date(2021, 9, 14)
+        # noinspection PyTypeChecker
+        end_date: date = None
+
+        with self.assertRaises(ValueError):
+            self.helper.get_daily_production(start_date, end_date)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_daily_production_with_end_date_lower_than_start_date(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('daily_production.json')
+        ])
+        new_session_mock.return_value = self.session
+        start_date: date = date(2021, 9, 22)
+        end_date: date = date(2021, 9, 14)
+
+        with self.assertRaises(ValueError):
+            self.helper.get_daily_production(start_date, end_date)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_daily_production(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('daily_production.json')
+        ])
+        new_session_mock.return_value = self.session
+        start_date: date = date(2021, 9, 14)
+        end_date: date = date(2021, 9, 22)
+
+        result: dict[date, int] = self.helper.get_daily_production(start_date, end_date)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(8, len(result))
+        for k, v in result.items():
+            self.assertIsNotNone(k)
+            self.assertIsInstance(k, date)
+            self.assertTrue(k.year == 2021)
+            self.assertTrue(k.month == 9)
+            self.assertTrue(k.day >= 14)
+            self.assertTrue(k.day <= 22)
+            self.assertIsNotNone(v)
+            self.assertIsInstance(v, int)
+            self.assertTrue(v >= 26429)
+            self.assertTrue(v <= 49171)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_production_load_curve_without_start_date(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('production_load_curve.json')
+        ])
+        new_session_mock.return_value = self.session
+        # noinspection PyTypeChecker
+        start_date: date = None
+        end_date: date = date(2021, 9, 22)
+
+        with self.assertRaises(ValueError):
+            self.helper.get_production_load_curve(start_date, end_date)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_production_load_curve_without_end_date(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('production_load_curve.json')
+        ])
+        new_session_mock.return_value = self.session
+        start_date: date = date(2021, 9, 14)
+        # noinspection PyTypeChecker
+        end_date: date = None
+
+        with self.assertRaises(ValueError):
+            self.helper.get_production_load_curve(start_date, end_date)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_production_load_curve_with_end_date_lower_than_start_date(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('daily_production.json')
+        ])
+        new_session_mock.return_value = self.session
+        start_date: date = date(2021, 9, 22)
+        end_date: date = date(2021, 9, 14)
+
+        with self.assertRaises(ValueError):
+            self.helper.get_production_load_curve(start_date, end_date)
+
+    @patch('enedis_data_connect.enedis_client.EnedisClient._new_session')
+    def test_get_production_load_curve(self, new_session_mock) -> None:
+        """
+        Test the close method
+        """
+        self.session.send = Mock(side_effect=[
+            response_from_resource('authentication.json'),
+            response_from_resource('production_load_curve.json')
+        ])
+        new_session_mock.return_value = self.session
+        start_date: date = date(2021, 9, 14)
+        end_date: date = date(2021, 9, 22)
+
+        result: dict[datetime, int] = self.helper.get_production_load_curve(start_date, end_date)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(48, len(result))
+        for k, v in result.items():
+            self.assertIsNotNone(k)
+            self.assertIsInstance(k, datetime)
+            self.assertTrue(k.year == 2021)
+            self.assertTrue(k.month == 9)
+            self.assertTrue(k.day >= 14)
+            self.assertTrue(k.day <= 22)
+            self.assertIsNotNone(v)
+            self.assertIsInstance(v, int)
+            self.assertTrue(v >= 261)
+            self.assertTrue(v <= 3554)

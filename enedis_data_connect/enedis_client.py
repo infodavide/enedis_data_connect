@@ -7,7 +7,7 @@ import base64
 import json
 import logging
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from threading import RLock
 from typing import Any
 from requests import PreparedRequest, Session, Request, Response
@@ -21,7 +21,7 @@ _RETRIES_COUNT: int = 3
 ENDPOINT_URL: str = 'https://ext.prod-sandbox.api.enedis.fr'
 _ENDPOINT_TOKEN_URL: str = ENDPOINT_URL + '/oauth2/v3/'
 EMPTY_STRING: str = ''
-DEFAULT_PDL: str = EMPTY_STRING
+DEFAULT_PRM: str = EMPTY_STRING
 DEFAULT_CLIENT_ID: str = EMPTY_STRING
 DEFAULT_CLIENT_SECRET: str = EMPTY_STRING
 DEFAULT_REDIRECT_URI: str = 'http://localhost'
@@ -53,7 +53,7 @@ class InvalidClientSecret(ValueError):
     """
 
 
-class InvalidPdl(ValueError):
+class InvalidPrm(ValueError):
     """
     Error to indicate that PDL is invalid
     """
@@ -90,10 +90,11 @@ class EnedisClient(metaclass=Singleton):
     """
 
     # noinspection PyTypeChecker
-    def __init__(self, pdl: str, client_id: str, client_secret: str, redirect_uri: str = DEFAULT_REDIRECT_URI):
+    def __init__(self, consumption_prm: str, production_prm: str, client_id: str, client_secret: str, redirect_uri: str = DEFAULT_REDIRECT_URI):
         """
         The constructor
-        :param pdl: the PDL identifier
+        :param consumption_prm: the PRM identifier for the consumption
+        :param production_prm: the PRM identifier for the production
         :param client_id: the client identifier
         :param client_secret: the client secret
         :param redirect_uri: the redirection URI
@@ -103,9 +104,13 @@ class EnedisClient(metaclass=Singleton):
             self._logger.addHandler(handler)
             self._logger.setLevel(LOGGER.level)
         self._logger.debug("Building a %s", __class__.__name__)
-        self._logger.debug("Building the client with: PDL: %s, Client identifier: %s, redirect URL: %s and secret: %s", pdl, client_id, redirect_uri, re.sub(r'.', '*', client_secret))
-        if pdl is None or not re.match("\\d{14}", pdl):
-            raise InvalidPdl
+        self._logger.debug("Building the client with: PRMs: %s, %s, Client identifier: %s, redirect URL: %s and secret: %s", consumption_prm, production_prm, client_id, redirect_uri, re.sub(r'.', '*', client_secret))
+        if consumption_prm is None and production_prm is None:
+            raise InvalidPrm
+        if consumption_prm is not None and not re.match("\\d{14}", consumption_prm):
+            raise InvalidPrm
+        if production_prm is not None and not re.match("\\d{14}", production_prm):
+            raise InvalidPrm
         if redirect_uri is None or not re.match('^(http|https):.*$', redirect_uri):  # Note that validators.url does not validate URL with localhost or some special characters
             raise InvalidUrl
         if client_id is None or len(client_id) <= 0 or len(client_id) > 128:
@@ -113,7 +118,8 @@ class EnedisClient(metaclass=Singleton):
         if client_secret is None or len(client_secret) <= 0 or len(client_secret) > 128:
             raise InvalidClientSecret
         self._lock: RLock = RLock()
-        self._pdl: str = pdl
+        self._consumption_prm: str = consumption_prm
+        self._production_prm: str = production_prm
         self._client_id: str = client_id
         self._client_secret: bytes = base64.b64encode(client_secret.encode('utf-8'))
         self._redirect_uri: str = DEFAULT_REDIRECT_URI
@@ -366,12 +372,19 @@ class EnedisClient(metaclass=Singleton):
             self._logger.exception("An error occurred while closing the client")
         self._token_data = None
 
-    def get_pdl(self) -> str:
+    def get_consumption_prm(self) -> str:
         """
-        Get the PDL identifier
-        :return: the PDL identifier
+        Get the PRM identifier for consumption
+        :return: the PRM identifier
         """
-        return self._pdl
+        return self._consumption_prm
+
+    def get_production_prm(self) -> str:
+        """
+        Get the PRM identifier for production
+        :return: the PRM identifier
+        """
+        return self._production_prm
 
     def get_client_id(self) -> str:
         """
@@ -443,10 +456,39 @@ class EnedisClient(metaclass=Singleton):
 
 
 # noinspection SpellCheckingInspection
-class EnedisApiHelper:
+class EnedisApiHelper:  # pylint: disable=too-many-instance-attributes
     """
     The API helper
     """
+
+    @staticmethod
+    def _assert_input(start_date: date, end_date: date) -> None:
+        """
+        Validate the input data
+        :param start_date: the start date
+        :param end_date: the end date
+        """
+        if not start_date:
+            raise ValueError('Start date is not valid')
+        if not end_date:
+            raise ValueError('End date is not valid')
+        if start_date > end_date:
+            raise ValueError('End date must be greater than start date')
+
+    @staticmethod
+    def _get_req_params(start_date: date, end_date: date, prm: str) -> dict[str, str]:
+        """
+        Generate the request parameters according to the given dates
+        :param start_date: the start date
+        :param end_date: the end date
+        :param prm: the PRM identifier
+        :return: the dictionary describing the parameters
+        """
+        return {
+            _START_PARAM: start_date.strftime(_DATE_FORMAT),
+            _END_PARAM: end_date.strftime(_DATE_FORMAT),
+            _USAGE_POINT_ID: prm
+        }
 
     # noinspection PyTypeChecker
     def __init__(self, client: EnedisClient):
@@ -466,6 +508,10 @@ class EnedisApiHelper:
         self._daily_consumption_request_end_date: date = None
         self._consumption_load_curve_request_date: datetime = None
         self._consumption_load_curve_request_end_date: date = None
+        self._daily_production_request_date: datetime = None
+        self._daily_production_request_end_date: date = None
+        self._production_load_curve_request_date: datetime = None
+        self._production_load_curve_request_end_date: date = None
 
     # noinspection PyTypeChecker
     def reset(self, request_dates: bool = False) -> None:
@@ -478,33 +524,20 @@ class EnedisApiHelper:
             self._max_daily_consumed_power_request_date: datetime = None
             self._daily_consumption_request_date: datetime = None
             self._consumption_load_curve_request_date: datetime = None
+            self._daily_production_request_date: datetime = None
+            self._production_load_curve_request_date: datetime = None
         self._max_daily_consumed_power_request_end_date: date = None
         self._daily_consumption_request_end_date: date = None
         self._consumption_load_curve_request_end_date: date = None
+        self._daily_production_request_end_date: date = None
+        self._production_load_curve_request_end_date: date = None
 
-    def get_max_daily_consumed_power(self, start_date: date, end_date: date) -> dict[datetime, int]:
+    def _process_data(self, data: dict[str, Any]) -> dict[datetime, int]:
         """
-        Return the maximum consumed power per day
-        :param start_date: the start date
-        :param end_date: the end date
-        :return: the dictionary describing values indexed by the date
+        Return the parsed data as a dictionary of values indexed by the datetimes
+        :param data: the data from the API response
+        :return: the dictionary describing the values
         """
-        if not start_date:
-            raise ValueError('Start date is not valid')
-        if not end_date:
-            raise ValueError('End date is not valid')
-        if start_date > end_date:
-            raise ValueError('End date must be greater than start date')
-        self._logger.debug('Retrieving maximum daily consumed power...')
-        req_params = {
-            _START_PARAM: start_date.strftime(_DATE_FORMAT),
-            _END_PARAM: end_date.strftime(_DATE_FORMAT),
-            _USAGE_POINT_ID: self._client.get_pdl()
-        }
-        # noinspection SpellCheckingInspection
-        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_dcmp/v5/daily_consumption_max_power', params=req_params)
-        self._max_daily_consumed_power_request_date = datetime.now()
-        self._max_daily_consumed_power_request_end_date = end_date
         result: dict[datetime, int] = {}
         if data and _METER_READING_KEY in data:
             meter_reading: dict[str, Any] = data[_METER_READING_KEY]
@@ -517,29 +550,14 @@ class EnedisApiHelper:
         self._logger.debug('%s items retrieved', len(result))
         return result
 
-    def get_daily_consumption(self, start_date: date, end_date: date) -> dict[date, int]:
+    def _process_daily_data(self, start_date: date, end_date: date, data: dict[str, Any]) -> dict[date, int]:
         """
-        Return the consumption per day
+        Return the parsed data as a dictionary of values indexed by the dates
         :param start_date: the start date
         :param end_date: the end date
-        :return: the dictionary describing values indexed by the date
+        :param data: the data from the API response
+        :return: the dictionary describing the values
         """
-        if not start_date:
-            raise ValueError('Start date is not valid')
-        if not end_date:
-            raise ValueError('End date is not valid')
-        if start_date > end_date:
-            raise ValueError('End date must be greater than start date')
-        self._logger.debug('Retrieving daily consumption...')
-        req_params = {
-            _START_PARAM: start_date.strftime(_DATE_FORMAT),
-            _END_PARAM: end_date.strftime(_DATE_FORMAT),
-            _USAGE_POINT_ID: self._client.get_pdl()
-        }
-        # noinspection SpellCheckingInspection
-        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_dc/v5/daily_consumption', params=req_params)
-        self._daily_consumption_request_date = datetime.now()
-        self._daily_consumption_request_end_date = end_date
         result: dict[date, int] = {}
         if data and _METER_READING_KEY in data:
             meter_reading: dict[str, Any] = data[_METER_READING_KEY]
@@ -549,8 +567,43 @@ class EnedisApiHelper:
                     for interval in intervals:
                         if _DATE_KEY in interval and _VALUE_KEY in interval:
                             result[datetime.strptime(interval[_DATE_KEY], _DATE_FORMAT).date()] = int(interval[_VALUE_KEY])
+        d: date = start_date
+        while d < end_date:
+            if d not in result:
+                result[d] = 0
+            d = d + timedelta(days=1)
         self._logger.debug('%s items retrieved', len(result))
         return result
+
+    def get_max_daily_consumed_power(self, start_date: date, end_date: date) -> dict[datetime, int]:
+        """
+        Return the maximum consumed power per day
+        :param start_date: the start date
+        :param end_date: the end date
+        :return: the dictionary describing values indexed by the date
+        """
+        EnedisApiHelper._assert_input(start_date, end_date)
+        self._logger.debug('Retrieving maximum daily consumed power...')
+        # noinspection SpellCheckingInspection
+        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_dcmp/v5/daily_consumption_max_power', params=EnedisApiHelper._get_req_params(start_date, end_date, self._client.get_consumption_prm()))
+        self._max_daily_consumed_power_request_date = datetime.now()
+        self._max_daily_consumed_power_request_end_date = end_date
+        return self._process_data(data)
+
+    def get_daily_consumption(self, start_date: date, end_date: date) -> dict[date, int]:
+        """
+        Return the consumption per day
+        :param start_date: the start date
+        :param end_date: the end date
+        :return: the dictionary describing values indexed by the date
+        """
+        EnedisApiHelper._assert_input(start_date, end_date)
+        self._logger.debug('Retrieving daily consumption...')
+        # noinspection SpellCheckingInspection
+        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_dc/v5/daily_consumption', params=EnedisApiHelper._get_req_params(start_date, end_date, self._client.get_consumption_prm()))
+        self._daily_consumption_request_date = datetime.now()
+        self._daily_consumption_request_end_date = end_date
+        return self._process_daily_data(start_date, end_date, data)
 
     def get_consumption_load_curve(self, start_date: date, end_date: date) -> dict[datetime, int]:
         """
@@ -560,31 +613,43 @@ class EnedisApiHelper:
         :param end_date: the end date
         :return: the dictionary describing values indexed by the date
         """
-        if not start_date:
-            raise ValueError('Start date is not valid')
-        if not end_date:
-            raise ValueError('End date is not valid')
-        if start_date > end_date:
-            raise ValueError('End date must be greater than start date')
+        EnedisApiHelper._assert_input(start_date, end_date)
         self._logger.debug('Retrieving consumption load curve...')
-        req_params = {
-            _START_PARAM: start_date.strftime(_DATE_FORMAT),
-            _END_PARAM: end_date.strftime(_DATE_FORMAT),
-            _USAGE_POINT_ID: self._client.get_pdl()
-        }
         # noinspection SpellCheckingInspection
-        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_clc/v5/consumption_load_curve', params=req_params)
+        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_clc/v5/consumption_load_curve', params=EnedisApiHelper._get_req_params(start_date, end_date, self._client.get_consumption_prm()))
         self._logger.debug('%s items retrieved', len(data))
         self._consumption_load_curve_request_date = datetime.now()
         self._consumption_load_curve_request_end_date = end_date
-        result: dict[datetime, int] = {}
-        if data and _METER_READING_KEY in data:
-            meter_reading: dict[str, Any] = data[_METER_READING_KEY]
-            if _INTERVAL_READING_KEY in meter_reading:
-                intervals: list[dict[str, Any]] = meter_reading[_INTERVAL_READING_KEY]
-                if intervals:
-                    for interval in intervals:
-                        if _DATE_KEY in interval and _VALUE_KEY in interval:
-                            result[datetime.strptime(interval[_DATE_KEY], _DATE_TIME_FORMAT)] = int(interval[_VALUE_KEY])
-        self._logger.debug('%s items retrieved', len(result))
-        return result
+        return self._process_data(data)
+
+    def get_daily_production(self, start_date: date, end_date: date) -> dict[date, int]:
+        """
+        Return the production per day
+        :param start_date: the start date
+        :param end_date: the end date
+        :return: the dictionary describing values indexed by the date
+        """
+        EnedisApiHelper._assert_input(start_date, end_date)
+        self._logger.debug('Retrieving daily production...')
+        # noinspection SpellCheckingInspection
+        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_dp/v5/daily_production', params=EnedisApiHelper._get_req_params(start_date, end_date, self._client.get_production_prm()))
+        self._daily_production_request_date = datetime.now()
+        self._daily_production_request_end_date = end_date
+        return self._process_daily_data(start_date, end_date, data)
+
+    def get_production_load_curve(self, start_date: date, end_date: date) -> dict[datetime, int]:
+        """
+        Return the production per available period defined by the API
+        This API provides data each 30 minutes
+        :param start_date: the start date
+        :param end_date: the end date
+        :return: the dictionary describing values indexed by the date
+        """
+        EnedisApiHelper._assert_input(start_date, end_date)
+        self._logger.debug('Retrieving production load curve...')
+        # noinspection SpellCheckingInspection
+        data: dict[str, Any] = self._client.get_data(f'{ENDPOINT_URL}/metering_data_plc/v5/production_load_curve', params=EnedisApiHelper._get_req_params(start_date, end_date, self._client.get_production_prm()))
+        self._logger.debug('%s items retrieved', len(data))
+        self._production_load_curve_request_date = datetime.now()
+        self._production_load_curve_request_end_date = end_date
+        return self._process_data(data)
