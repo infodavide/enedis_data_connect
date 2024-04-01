@@ -16,7 +16,7 @@ with open('LICENSE', encoding='utf-8') as f:
 
 setup(
     name='enedis_data_connect',
-    version='1.0.0',
+    version='1.0.1',
     description='Enedis data connect client',
     long_description=readme_content,
     author='David R', 
