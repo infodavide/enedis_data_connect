@@ -29,7 +29,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install Markdown
+        pip install markdown
         pip install beautifulsoup4
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install build
