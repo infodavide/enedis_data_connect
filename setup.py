@@ -2,14 +2,10 @@
 """
 Learn more: https://github.com/infodavide/enedis_data_connect
 """
-import markdown # pip install markdown
-from bs4 import BeautifulSoup
 from setuptools import setup, find_packages
 
 with open('README.md', encoding='utf-8') as f:
-    html = markdown.markdown(f.read())
-    soup = BeautifulSoup(html, features='html.parser')
-    readme_content = soup.get_text()
+    readme_content = f.read()
 
 with open('LICENSE', encoding='utf-8') as f:
     license_content = f.read()
